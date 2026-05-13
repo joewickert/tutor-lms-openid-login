@@ -1,0 +1,15 @@
+.tutor-lms-openid-login {
+  margin: 14px 0;
+}
+
+.tutor-lms-openid-login .button,
+.tutor-lms-openid-login a.button {
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.tutor-lms-openid-login + .tutor-lms-openid-login {
+  margin-top: 10px;
+}
+
