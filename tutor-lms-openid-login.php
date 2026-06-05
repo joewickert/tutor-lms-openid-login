@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Tutor LMS OpenID Login Button
- * Description: Adds an OpenID Connect Generic login button to the Tutor LMS login block (students).
+ * Description: Adds an OpenID Connect Generic login button to the Tutor LMS login and student registration forms.
  * Version: 0.1.1
  * Author: Summer Hill Media
  * Requires at least: 5.0
@@ -17,6 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Tutor_LMS_OpenID_Login_Button {
 	const VERSION = '0.1.0';
 
+	/** @var bool Whether the button has already been rendered on this request. */
+	private static $button_rendered = false;
+
 	public static function register(): void {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 
@@ -27,6 +30,7 @@ final class Tutor_LMS_OpenID_Login_Button {
 		add_action( 'tutor_login_form_before', array( __CLASS__, 'maybe_render_on_login_form' ) );
 		add_action( 'tutor_login_form_end', array( __CLASS__, 'maybe_render_on_login_form' ) );
 		add_action( 'tutor_login_form_after', array( __CLASS__, 'maybe_render_on_login_form' ) );
+		add_action( 'tutor_before_student_reg_form', array( __CLASS__, 'maybe_render_on_registration_form' ) );
 	}
 
 	public static function enqueue_assets(): void {
@@ -56,7 +60,7 @@ final class Tutor_LMS_OpenID_Login_Button {
 			return;
 		}
 
-		// Only inject into Tutor's login template.
+		// Login page only; registration uses tutor_before_student_reg_form for placement above the form.
 		if ( 'global.login' !== $template ) {
 			return;
 		}
@@ -75,7 +79,22 @@ final class Tutor_LMS_OpenID_Login_Button {
 		self::render_button();
 	}
 
+	/**
+	 * Render via Tutor student registration form hook (preferred).
+	 */
+	public static function maybe_render_on_registration_form(): void {
+		if ( is_user_logged_in() ) {
+			return;
+		}
+
+		self::render_button();
+	}
+
 	private static function render_button(): void {
+		if ( self::$button_rendered ) {
+			return;
+		}
+
 		// Only render if OpenID Connect Generic is present (it provides the shortcode).
 		if ( ! shortcode_exists( 'openid_connect_generic_login_button' ) ) {
 			return;
@@ -91,6 +110,7 @@ final class Tutor_LMS_OpenID_Login_Button {
 		);
 
 		echo self::wrap_html( do_shortcode( $shortcode ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		self::$button_rendered = true;
 	}
 
 	private static function current_url(): string {
