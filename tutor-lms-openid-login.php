@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tutor LMS OpenID Login Button
  * Description: Adds an OpenID Connect Generic login button to the Tutor LMS login and student registration forms.
- * Version: 0.1.1
+ * Version: 0.1.2
  * Author: Summer Hill Media
  * Requires at least: 5.0
  * Requires PHP: 7.4
