@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tutor LMS OpenID Login Button
- * Description: Adds an OpenID Connect Generic login button to the Tutor LMS login and student registration forms.
- * Version: 0.1.2
+ * Description: Adds an OpenID Connect Generic login button to Tutor LMS login, registration, and login modal forms.
+ * Version: 0.1.3
  * Author: Summer Hill Media
  * Requires at least: 5.0
  * Requires PHP: 7.4
@@ -17,14 +17,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Tutor_LMS_OpenID_Login_Button {
 	const VERSION = '0.1.0';
 
-	/** @var bool Whether the button has already been rendered on this request. */
-	private static $button_rendered = false;
+	/** @var string[] Contexts that have already rendered the button on this request. */
+	private static $button_rendered_contexts = array();
 
 	public static function register(): void {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 
 		// Tutor LMS template hooks (preferred).
 		add_action( 'tutor_load_template_before', array( __CLASS__, 'maybe_render_on_template' ), 10, 2 );
+
+		// Login form + modal (views/modal/login.php loads templates/login-form.php).
+		add_action( 'tutor_before_login_form', array( __CLASS__, 'maybe_render_on_login_form' ) );
 
 		// Fallback hooks (older/newer Tutor versions sometimes expose these).
 		add_action( 'tutor_login_form_before', array( __CLASS__, 'maybe_render_on_login_form' ) );
@@ -65,18 +68,18 @@ final class Tutor_LMS_OpenID_Login_Button {
 			return;
 		}
 
-		self::render_button();
+		self::render_button( 'login' );
 	}
 
 	/**
-	 * Render via Tutor login-form hooks (when available).
+	 * Render via Tutor login-form hooks (login page and login modal).
 	 */
 	public static function maybe_render_on_login_form(): void {
 		if ( is_user_logged_in() ) {
 			return;
 		}
 
-		self::render_button();
+		self::render_button( 'login' );
 	}
 
 	/**
@@ -87,11 +90,14 @@ final class Tutor_LMS_OpenID_Login_Button {
 			return;
 		}
 
-		self::render_button();
+		self::render_button( 'registration' );
 	}
 
-	private static function render_button(): void {
-		if ( self::$button_rendered ) {
+	/**
+	 * @param string $context Unique render context (e.g. login, registration).
+	 */
+	private static function render_button( string $context = 'default' ): void {
+		if ( in_array( $context, self::$button_rendered_contexts, true ) ) {
 			return;
 		}
 
@@ -110,7 +116,7 @@ final class Tutor_LMS_OpenID_Login_Button {
 		);
 
 		echo self::wrap_html( do_shortcode( $shortcode ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		self::$button_rendered = true;
+		self::$button_rendered_contexts[] = $context;
 	}
 
 	private static function current_url(): string {
